@@ -30,7 +30,6 @@ const HomePage = () => {
       if (Array.isArray(response.data)) {
         setNotes(response.data);
       } else {
-        toast.error('Unexpected data format from /notes');
         setNotes([]);
       }
     } catch (error) {
