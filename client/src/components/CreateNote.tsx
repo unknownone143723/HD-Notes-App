@@ -15,22 +15,21 @@ const CreateNote = ({ onNoteCreated }: CreateNoteProps) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      return toast.error('Title is required.');
+      return toast.error('Title is required.', { id: 'title-required' });
     }
     if (!content.trim()) {
-      return toast.error('Content cannot be empty.');
+      return toast.error('Content cannot be empty.', { id: 'content-required' });
     }
 
     setIsLoading(true);
     try {
       const response = await api.post('/notes', { title, content });
-      toast.success('Note created successfully!');
+      toast.success('Note created successfully!', { id: 'note-success' });
       onNoteCreated(response.data);
-      // Reset form fields
       setTitle('');
       setContent('');
     } catch (error) {
-      toast.error('Failed to create the note. Please try again.');
+      toast.error('Failed to create the note. Please try again.', { id: 'note-failure' });
       console.error(error);
     } finally {
       setIsLoading(false);

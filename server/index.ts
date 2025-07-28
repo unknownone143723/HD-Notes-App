@@ -11,7 +11,10 @@ dotenv.config();
 
 const app: Express = express();
 
-app.use(cors());
+const frontendURL = process.env.FRONTEND_URL || "http://localhost:5173";
+app.use(cors({
+    origin: frontendURL
+}));
 app.use(express.json()); 
 
 // Routes
@@ -41,3 +44,5 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+export default app;

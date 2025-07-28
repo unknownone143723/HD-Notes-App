@@ -10,7 +10,7 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
-    // "allowImportingTsExtensions": true, // This can sometimes cause issues, let's keep it commented unless needed
+
     "resolveJsonModule": true,
     "isolatedModules": true,
     "moduleDetection": "force",

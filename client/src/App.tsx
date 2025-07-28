@@ -39,7 +39,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <Navbar />
-      <main className="bg-white container mx-auto p-4 md:p-6 lg:p-8">
+      <main className="">
         <Routes>
           <Route 
             path="/" 

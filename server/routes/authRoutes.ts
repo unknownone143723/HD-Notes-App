@@ -1,7 +1,7 @@
 // src/routes/authRoutes.ts
 
 import { Router } from 'express';
-import { signup, verifyOtp, login, sendLoginOtp, verifyLoginOtp } from '../controllers/authController';
+import { signup, verifyOtp, login, sendLoginOtp, verifyLoginOtp, googleLogin } from '../controllers/authController';
 
 const router = Router();
 
@@ -10,8 +10,11 @@ router.post('/signup', signup);
 router.post('/verify-otp', verifyOtp);
 
 // Login Routes
-router.post('/login', login); // For password login
-router.post('/send-login-otp', sendLoginOtp); // For OTP login step 1
-router.post('/verify-login-otp', verifyLoginOtp); // For OTP login step 2
+router.post('/login', login);
+router.post('/send-login-otp', sendLoginOtp);
+router.post('/verify-login-otp', verifyLoginOtp);
+
+// Google Auth Route
+router.post('/google', googleLogin);
 
 export default router;

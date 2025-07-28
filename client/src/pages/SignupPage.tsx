@@ -1,15 +1,11 @@
-// src/pages/SignupPage.tsx
-
 import React, { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import api from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 import Spinner from '../components/Spinner';
 
-// --- HELPER COMPONENTS ---
-// **THE FIX for FOCUS LOSS**: By defining these components outside the main SignupPage function,
-// they are not recreated on every render, which prevents the input from losing focus.
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -38,7 +34,7 @@ const InputField = ({ name, type, label, value, onChange, icon, disabled = false
     />
     <label
       htmlFor={name}
-      className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1"
+      className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1"
     >
       {label}
     </label>
@@ -46,16 +42,9 @@ const InputField = ({ name, type, label, value, onChange, icon, disabled = false
   </div>
 );
 
-
-// --- MAIN SIGNUP PAGE COMPONENT ---
 const SignupPage = () => {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    name: '',
-    dateOfBirth: '',
-    email: '',
-    password: '' // **THE FIX**: Added password to the main form data state
-  });
+  const [formData, setFormData] = useState({ name: '', dateOfBirth: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -66,13 +55,12 @@ const SignupPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleGetOtp = async () => { // Removed 'e: FormEvent'
+  const handleGetOtp = async () => {
     if (!formData.name || !formData.dateOfBirth || !formData.email || !formData.password) {
-      return toast.error("Please fill in all your details, including password.");
+      return toast.error('Please fill in all your details, including password.');
     }
     setIsLoading(true);
     try {
-      // **THE FIX**: Now sends the complete form data including the password
       await api.post('/auth/signup', formData);
       toast.success('OTP sent successfully!');
       setStep(2);
@@ -92,12 +80,9 @@ const SignupPage = () => {
         email: formData.email,
         otp
       });
-
-      // ✅ Fix here
       login(response.data.email, response.data.token);
-
       toast.success('Account created successfully!');
-      navigate('/welcome'); // ✅ This will now run
+      navigate('/welcome');
     } catch (error: any) {
       const message = error.response?.data?.message || 'OTP verification failed.';
       toast.error(message);
@@ -106,62 +91,75 @@ const SignupPage = () => {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    setIsLoading(true);
+    try {
+      const response = await api.post('/auth/google', { credential: credentialResponse.credential });
+      login(response.data.email, response.data.token);
+      toast.success(`Welcome, ${response.data.name}!`);
+      navigate('/');
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Google sign up failed.';
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    // YOUR ORIGINAL LAYOUT IS PRESERVED
-    <div className="">
-      <div className="w-full max-w-4xl mx-auto md:h-[575px] bg-white rounded-2xl shadow-xl flex">
+    <div>
+      <div className="w-full max-w-4xl md:mt-3 md:h-[610px] mx-auto bg-white rounded-2xl flex">
         <div className="w-full lg:w-1/2 p-8 sm:p-12 flex flex-col justify-center">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Sign up</h1>
             <p className="text-gray-500 mt-2">Sign up to enjoy the feature of HD</p>
           </div>
 
-          {/* **THE FIX for VALIDATION**: A single form now handles the final submission. */}
           <form onSubmit={handleSignup} className="space-y-6">
             {step === 1 ? (
               <div className="space-y-6">
-                <InputField name="name" type="text" label="Your Name" value={formData.name} onChange={handleInputChange} required={step === 1} />
-                <InputField name="dateOfBirth" type="date" label="Date of Birth" value={formData.dateOfBirth} onChange={handleInputChange} required={step === 1} />
-                <InputField name="email" type="email" label="Email" value={formData.email} onChange={handleInputChange} required={step === 1} />
+                <InputField name="name" type="text" label="Your Name" value={formData.name} onChange={handleInputChange} />
+                <InputField name="dateOfBirth" type="date" label="Date of Birth" value={formData.dateOfBirth} onChange={handleInputChange} />
+                <InputField name="email" type="email" label="Email" value={formData.email} onChange={handleInputChange} />
                 <InputField
-                  name="password" type={showPassword ? 'text' : 'password'} label="Create Password" value={formData.password}
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  label="Create Password"
+                  value={formData.password}
                   onChange={handleInputChange}
-                  required={step === 1}
                   icon={
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute top-1/2 -translate-y-1/2 right-3 text-gray-400">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </button>
                   }
                 />
-                <button
-                  type="button" // This button does NOT submit the form
-                  onClick={handleGetOtp}
-                  disabled={isLoading}
-                  className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 flex items-center justify-center"
-                >
+                <button type="button" onClick={handleGetOtp} disabled={isLoading} className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 flex items-center justify-center">
                   {isLoading ? <Spinner /> : 'Get OTP'}
                 </button>
               </div>
             ) : (
               <div className="space-y-6">
-                <InputField
-                  name="otp" type="text" label="OTP" value={otp}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const value = e.target.value;
-                    if (/^[0-9]*$/.test(value) && value.length <= 6) setOtp(value);
-                  }}
-                  required={step === 2}
-                />
-                <button
-                  type="submit" // This button DOES submit the form
-                  disabled={isLoading}
-                  className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 flex items-center justify-center"
-                >
+                <InputField name="otp" type="text" label="OTP" value={otp} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const value = e.target.value; if (/^[0-9]*$/.test(value) && value.length <= 6) setOtp(value); }} />
+                <button type="submit" disabled={isLoading} className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 flex items-center justify-center">
                   {isLoading ? <Spinner /> : 'Sign up'}
                 </button>
               </div>
             )}
           </form>
+
+          <div className="my-6 flex items-center">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="flex-shrink mx-4 text-gray-400 text-sm">OR</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error('Google sign up failed. Please try again.')}
+              useOneTap
+            />
+          </div>
 
           <p className="text-sm text-center text-gray-500 mt-8">
             Already have an account?{' '}

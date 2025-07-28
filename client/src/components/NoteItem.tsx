@@ -3,9 +3,10 @@ import { Note } from '../pages/HomePage';
 interface NoteItemProps {
   note: Note;
   onDelete: (noteId: string) => void;
+  onEdit: (note: Note) => void; 
 }
 
-const NoteItem = ({ note, onDelete }: NoteItemProps) => {
+const NoteItem = ({ note, onDelete, onEdit }: NoteItemProps) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
       <div className="flex-grow">
@@ -20,12 +21,20 @@ const NoteItem = ({ note, onDelete }: NoteItemProps) => {
             day: 'numeric',
           })}
         </p>
-        <button
-          onClick={() => onDelete(note._id)}
-          className="px-3 py-1 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-        >
-          Delete
-        </button>
+        <div className="flex space-x-2">
+           <button
+            onClick={() => onEdit(note)}
+            className="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(note._id)}
+            className="px-3 py-1 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );

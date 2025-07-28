@@ -1,10 +1,11 @@
-// src/controllers/authController.ts
-
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import User, { IUser } from '../models/User';
 import { sendEmail } from '../utils/mailer';
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const generateToken = (id: string) => {
     const secret = process.env.JWT_SECRET;
@@ -16,7 +17,6 @@ const generateToken = (id: string) => {
     });
 };
 
-// This is your existing, correct signup function
 export const signup = async (req: Request, res: Response) => {
     const { name, email, password, dateOfBirth } = req.body;
     if (!name || !email || !password || !dateOfBirth) {
@@ -54,7 +54,6 @@ export const signup = async (req: Request, res: Response) => {
     }
 };
 
-// This is your existing, correct verifyOtp function for signup
 export const verifyOtp = async (req: Request, res: Response) => {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -81,7 +80,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
     }
 };
 
-// This is your existing, correct login function for passwords
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -105,12 +103,6 @@ export const login = async (req: Request, res: Response) => {
     }
 };
 
-// --- NEW FUNCTIONS FOR OTP LOGIN ---
-
-/**
- * @desc    Step 1 (Login): Send OTP to a registered user
- * @route   POST /api/auth/send-login-otp
- */
 export const sendLoginOtp = async (req: Request, res: Response) => {
     const { email } = req.body;
     if (!email) {
@@ -123,17 +115,14 @@ export const sendLoginOtp = async (req: Request, res: Response) => {
         }
         const otp = crypto.randomInt(100000, 999999).toString();
         const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
         user.otp = otp;
         user.otpExpires = otpExpires;
         await user.save();
-
         await sendEmail({
             to: user.email,
             subject: 'Your Login Code',
             text: `Your one-time code for logging in is: ${otp}. It is valid for 10 minutes.`,
         });
-
         res.status(200).json({ message: 'OTP sent to your email.' });
     } catch (error) {
         console.error(error);
@@ -141,10 +130,6 @@ export const sendLoginOtp = async (req: Request, res: Response) => {
     }
 };
 
-/**
- * @desc    Step 2 (Login): Verify OTP and log in
- * @route   POST /api/auth/verify-login-otp
- */
 export const verifyLoginOtp = async (req: Request, res: Response) => {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -156,15 +141,12 @@ export const verifyLoginOtp = async (req: Request, res: Response) => {
             otp,
             otpExpires: { $gt: new Date() },
         });
-
         if (!user) {
             return res.status(400).json({ message: 'Invalid or expired OTP' });
         }
-
         user.otp = undefined;
         user.otpExpires = undefined;
         await user.save();
-
         res.status(200).json({
             _id: user._id,
             name: user.name,
@@ -174,5 +156,52 @@ export const verifyLoginOtp = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
+export const googleLogin = async (req: Request, res: Response) => {
+    const { credential } = req.body;
+    if (!credential) {
+        return res.status(400).json({ message: 'Google credential is required.' });
+    }
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        if (!payload) {
+            return res.status(400).json({ message: 'Invalid Google credential.' });
+        }
+        const { sub: googleId, email, name } = payload;
+        if (!email) {
+            return res.status(400).json({ message: 'Email not found in Google account.' });
+        }
+        let user = await User.findOne({ googleId });
+        if (!user) {
+            user = await User.findOne({ email });
+            if (user) {
+                user.googleId = googleId;
+                user.isVerified = true;
+                await user.save();
+            } else {
+                user = await User.create({
+                    googleId,
+                    email,
+                    name: name || 'Google User',
+                    isVerified: true,
+                });
+            }
+        }
+        res.status(200).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            token: generateToken(user._id.toString()),
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error during Google authentication.' });
     }
 };

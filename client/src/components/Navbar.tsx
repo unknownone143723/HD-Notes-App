@@ -14,22 +14,20 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    toast.success('You have been logged out.');
+    toast.success('You have been logged out.', { id: 'logout-success' });
     navigate('/login');
     setIsOpen(false);
   };
 
   return (
-    <header className="bg-white sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          {/* Logo - Always visible */}
+    <header className="bg-white sticky top-0 z-50 w-full">
+      <div className="w-full">
+        <div className="flex justify-between items-center py-4 px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center space-x-3">
             <img src="/icon.png" alt="HD Logo" className="h-8 w-auto" />
             <span className="text-2xl font-bold text-gray-800">HD</span>
           </Link>
 
-          {/* Hamburger Toggle - hidden on /login and /signup */}
           {!hideButtons && (
             <div className="lg:hidden">
               <button
@@ -41,7 +39,6 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* Desktop Menu - hidden on /login and /signup */}
           {!hideButtons && (
             <div className="hidden lg:flex items-center space-x-4">
               {isAuthenticated && (
@@ -56,9 +53,8 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile Menu - hidden on /login and /signup */}
         {!hideButtons && isOpen && (
-          <div className="lg:hidden flex flex-col space-y-3 pb-4">
+          <div className="lg:hidden flex flex-col space-y-3 pb-4 px-4">
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
