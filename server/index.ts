@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import path from 'path';
 
 import authRoutes from './routes/authRoutes';
 import noteRoutes from './routes/noteRoutes';
@@ -11,19 +12,21 @@ dotenv.config();
 
 const app: Express = express();
 
-const frontendURL="http://localhost:5173";
-app.use(cors({
-    origin: frontendURL
-}));
+app.use(cors());
+
 app.use(express.json()); 
 
+
 // Routes
-app.get('/', (req: Request, res: Response) => {
-    res.send('Notes App API is running...');
-});
 app.use('/api/auth', authRoutes);
 app.use('/api/notes', noteRoutes);
 
+const clientDistPath = path.join(__dirname, '../../client/dist');
+app.use(express.static(clientDistPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientDistPath, 'index.html'));
+});
 
 const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) {
@@ -43,5 +46,3 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
-export default app;
