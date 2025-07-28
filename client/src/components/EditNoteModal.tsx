@@ -28,7 +28,7 @@ const EditNoteModal = ({ isOpen, onClose, onSave, noteToEdit }: EditNoteModalPro
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center backdrop-blur-sm bg-white/30">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg border-2 border-blue-500">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg mx-4 border-2 border-blue-500">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Edit Note</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

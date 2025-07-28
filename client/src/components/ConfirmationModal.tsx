@@ -11,7 +11,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }: Confi
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/30">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md border-2 border-blue-500">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-4 border-2 border-blue-500">
                 <h2 className="text-xl font-bold text-gray-800">{title}</h2>
                 <p className="text-gray-600 mt-2 mb-6">{message}</p>
                 <div className="flex justify-end space-x-4">
