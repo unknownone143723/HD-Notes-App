@@ -1,8 +1,10 @@
+// src/controllers/authController.ts
+
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import User, { IUser } from '../models/User';
+import User from '../models/User';
 import { sendEmail } from '../utils/mailer';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -12,18 +14,16 @@ const generateToken = (id: string) => {
     if (!secret) {
         throw new Error('JWT_SECRET is not defined');
     }
-    return jwt.sign({ id }, secret, {
-        expiresIn: '30d',
-    });
+    return jwt.sign({ id }, secret, { expiresIn: '30d' });
 };
 
+/**
+ * @desc    Step 1 (Signup): Register user details, send OTP. No password.
+ */
 export const signup = async (req: Request, res: Response) => {
-    const { name, email, password, dateOfBirth } = req.body;
-    if (!name || !email || !password || !dateOfBirth) {
+    const { name, email, dateOfBirth } = req.body;
+    if (!name || !email || !dateOfBirth) {
         return res.status(400).json({ message: 'Please provide all required fields' });
-    }
-    if (password.length < 6) {
-        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
     }
     try {
         let user = await User.findOne({ email });
@@ -31,16 +31,16 @@ export const signup = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'User with this email already exists' });
         }
         const otp = crypto.randomInt(100000, 999999).toString();
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
         if (user) {
             user.name = name;
             user.dateOfBirth = dateOfBirth;
-            user.password = password;
             user.otp = otp;
             user.otpExpires = otpExpires;
             await user.save();
         } else {
-            user = await User.create({ name, email, password, dateOfBirth, otp, otpExpires });
+            user = await User.create({ name, email, dateOfBirth, otp, otpExpires });
         }
         await sendEmail({
             to: user.email,
@@ -54,6 +54,9 @@ export const signup = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * @desc    Step 2 (Signup): Verify OTP and finalize registration. No password.
+ */
 export const verifyOtp = async (req: Request, res: Response) => {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -80,29 +83,16 @@ export const verifyOtp = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * @desc    Password login is removed.
+ */
 export const login = async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Please provide email and password' });
-    }
-    try {
-        const user = await User.findOne({ email }).select('+password');
-        if (user && user.isVerified && (await user.comparePassword(password))) {
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                token: generateToken(user._id.toString()),
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid email or password' });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error during login' });
-    }
+    return res.status(404).json({ message: 'This endpoint is deprecated. Use OTP login.' });
 };
 
+/**
+ * @desc    Step 1 (Login): Send OTP to a registered user's email.
+ */
 export const sendLoginOtp = async (req: Request, res: Response) => {
     const { email } = req.body;
     if (!email) {
@@ -130,6 +120,9 @@ export const sendLoginOtp = async (req: Request, res: Response) => {
     }
 };
 
+/**
+ * @desc    Step 2 (Login): Verify OTP and log the user in.
+ */
 export const verifyLoginOtp = async (req: Request, res: Response) => {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -159,8 +152,9 @@ export const verifyLoginOtp = async (req: Request, res: Response) => {
     }
 };
 
-
+// Google login remains the same and is unaffected
 export const googleLogin = async (req: Request, res: Response) => {
+    // ... your existing googleLogin code ...
     const { credential } = req.body;
     if (!credential) {
         return res.status(400).json({ message: 'Google credential is required.' });
