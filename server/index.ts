@@ -10,20 +10,14 @@ dotenv.config();
 
 const app: Express = express();
 
-const allowedOrigins = [
-  'https://hd-notes-app.vercel.app',
-  'http://localhost:5173'
-];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+  origin: true,
+  credentials: true,
+}));
+
+app.options('*', cors({
+  origin: true,
+  credentials: true,
 }));
 
 app.use(express.json());
@@ -32,7 +26,6 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/notes', noteRoutes);
 
-// MongoDB connection
 const MONGO_URI = process.env.MONGO_URI;
 if (MONGO_URI) {
   mongoose.connect(MONGO_URI)
