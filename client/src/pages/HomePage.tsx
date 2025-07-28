@@ -17,7 +17,6 @@ const HomePage = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // State for modals
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [noteToEdit, setNoteToEdit] = useState<Note | null>(null);
 
@@ -25,13 +24,24 @@ const HomePage = () => {
     try {
       setIsLoading(true);
       const response = await api.get('/notes');
-      setNotes(response.data);
+
+      console.log('API Response:', response.data);
+
+      if (Array.isArray(response.data)) {
+        setNotes(response.data);
+      } else {
+        toast.error('Unexpected data format from /notes');
+        setNotes([]);
+      }
     } catch (error) {
-      toast.error('Failed to fetch notes.', { id: 'fetch-error' });
+      toast.error('Failed to fetch notes');
+      console.error('API Error:', error);
+      setNotes([]); 
     } finally {
       setIsLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchNotes();
