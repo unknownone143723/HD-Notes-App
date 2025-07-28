@@ -43,7 +43,7 @@ const InputField = ({ name, type, label, value, onChange, icon, disabled = false
 );
 
 const LoginPage = () => {
-  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('otp');
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
