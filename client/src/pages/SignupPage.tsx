@@ -6,11 +6,46 @@ import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
 import Spinner from '../components/Spinner';
 
-const InputField = ({ name, type, label, value, onChange, icon, disabled = false, required = true }: any) => (<div className="relative"> <input id={name} name={name} type={type} value={value} onChange={onChange} className="block w-full px-3 py-3 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer disabled:opacity-70 disabled:cursor-not-allowed" placeholder=" " required={required} disabled={disabled} /> <label htmlFor={name} className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1" > {label} </label> {icon && <div className="absolute top-1/2 -translate-y-1/2 right-3 text-gray-400">{icon}</div>} </div>);
+const EyeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+  </svg>
+);
+
+const InputField = ({ name, type, label, value, onChange, icon, disabled = false, required = true }: any) => (
+  <div className="relative">
+    <input
+      id={name}
+      name={name}
+      type={type}
+      value={value}
+      onChange={onChange}
+      className="block w-full px-3 py-3 text-sm text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer disabled:opacity-70 disabled:cursor-not-allowed"
+      placeholder=" "
+      required={required}
+      disabled={disabled}
+    />
+    <label
+      htmlFor={name}
+      className="absolute text-sm text-gray-500 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-1"
+    >
+      {label}
+    </label>
+    {icon && <div className="absolute top-1/2 -translate-y-1/2 right-3 text-gray-400">{icon}</div>}
+  </div>
+);
 
 const SignupPage = () => {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({ name: '', dateOfBirth: '', email: '' });
+  const [formData, setFormData] = useState({ name: '', dateOfBirth: '', email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -21,8 +56,8 @@ const SignupPage = () => {
   };
 
   const handleGetOtp = async () => {
-    if (!formData.name || !formData.dateOfBirth || !formData.email) {
-      return toast.error('Please fill in all your details.');
+    if (!formData.name || !formData.dateOfBirth || !formData.email || !formData.password) {
+      return toast.error('Please fill in all your details, including password.');
     }
     setIsLoading(true);
     try {
@@ -30,7 +65,7 @@ const SignupPage = () => {
       toast.success('OTP sent successfully!');
       setStep(2);
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to send OTP.';
+      const message = error.response?.data?.message || 'Failed to send OTP. Please check your details.';
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -86,14 +121,26 @@ const SignupPage = () => {
                 <InputField name="name" type="text" label="Your Name" value={formData.name} onChange={handleInputChange} />
                 <InputField name="dateOfBirth" type="date" label="Date of Birth" value={formData.dateOfBirth} onChange={handleInputChange} />
                 <InputField name="email" type="email" label="Email" value={formData.email} onChange={handleInputChange} />
-                <button type="button" onClick={handleGetOtp} disabled={isLoading} className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center">
+                <InputField
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  label="Create Password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  icon={
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    </button>
+                  }
+                />
+                <button type="button" onClick={handleGetOtp} disabled={isLoading} className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 flex items-center justify-center">
                   {isLoading ? <Spinner /> : 'Get OTP'}
                 </button>
               </div>
             ) : (
               <div className="space-y-6">
                 <InputField name="otp" type="text" label="OTP" value={otp} onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const value = e.target.value; if (/^[0-9]*$/.test(value) && value.length <= 6) setOtp(value); }} />
-                <button type="submit" disabled={isLoading} className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center">
+                <button type="submit" disabled={isLoading} className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 flex items-center justify-center">
                   {isLoading ? <Spinner /> : 'Sign up'}
                 </button>
               </div>
@@ -121,6 +168,7 @@ const SignupPage = () => {
             </Link>
           </p>
         </div>
+
         <div className="hidden lg:block lg:w-1/2">
           <img src="/container.png" alt="Signup illustration" className="w-full h-full object-cover rounded-r-2xl" />
         </div>

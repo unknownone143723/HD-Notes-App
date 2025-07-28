@@ -16,16 +16,17 @@ app.use(cors());
 
 app.use(express.json()); 
 
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/notes', noteRoutes);
+
 const clientDistPath = path.join(__dirname, '../../client/dist');
 app.use(express.static(clientDistPath));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/notes', noteRoutes);
 
 const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) {
