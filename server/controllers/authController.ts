@@ -18,40 +18,41 @@ const generateToken = (id: string) => {
 };
 
 export const signup = async (req: Request, res: Response) => {
-    const { name, email, password, dateOfBirth } = req.body;
-    if (!name || !email || !password || !dateOfBirth) {
-        return res.status(400).json({ message: 'Please provide all required fields' });
+  const { name, email, dateOfBirth } = req.body;
+  if (!name || !email || !dateOfBirth) {
+    return res.status(400).json({ message: 'Please provide all required fields' });
+  }
+
+  try {
+    let user = await User.findOne({ email });
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    if (user && user.isVerified) {
+      return res.status(400).json({ message: 'User with this email already exists' });
     }
-    if (password.length < 6) {
-        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+
+    if (user) {
+      user.name = name;
+      user.dateOfBirth = dateOfBirth;
+      user.otp = otp;
+      user.otpExpires = otpExpires;
+      await user.save();
+    } else {
+      user = await User.create({ name, email, dateOfBirth, otp, otpExpires });
     }
-    try {
-        let user = await User.findOne({ email });
-        if (user && user.isVerified) {
-            return res.status(400).json({ message: 'User with this email already exists' });
-        }
-        const otp = crypto.randomInt(100000, 999999).toString();
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-        if (user) {
-            user.name = name;
-            user.dateOfBirth = dateOfBirth;
-            user.password = password;
-            user.otp = otp;
-            user.otpExpires = otpExpires;
-            await user.save();
-        } else {
-            user = await User.create({ name, email, password, dateOfBirth, otp, otpExpires });
-        }
-        await sendEmail({
-            to: user.email,
-            subject: 'Your Verification Code',
-            text: `Your verification code is: ${otp}. It is valid for 10 minutes.`,
-        });
-        res.status(200).json({ message: 'OTP sent to your email.' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error during signup' });
-    }
+
+    await sendEmail({
+      to: user.email,
+      subject: 'Your Verification Code',
+      text: `Your verification code is: ${otp}. It is valid for 10 minutes.`,
+    });
+
+    res.status(200).json({ message: 'OTP sent to your email.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error during signup' });
+  }
 };
 
 export const verifyOtp = async (req: Request, res: Response) => {
@@ -80,28 +81,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
     }
 };
 
-export const login = async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Please provide email and password' });
-    }
-    try {
-        const user = await User.findOne({ email }).select('+password');
-        if (user && user.isVerified && (await user.comparePassword(password))) {
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                token: generateToken(user._id.toString()),
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid email or password' });
-        }
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error during login' });
-    }
-};
 
 export const sendLoginOtp = async (req: Request, res: Response) => {
     const { email } = req.body;

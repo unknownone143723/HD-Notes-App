@@ -7,29 +7,31 @@ export interface IRequest extends Request {
 }
 
 export const protect = async (req: IRequest, res: Response, next: NextFunction) => {
-    let token;
+    const authHeader = req.headers.authorization;
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        try {
-            token = req.headers.authorization.split(' ')[1];
-
-            const secret = process.env.JWT_SECRET;
-            if (!secret) {
-                throw new Error('JWT_SECRET is not defined in the environment variables.');
-            }
-            const decoded = jwt.verify(token, secret) as { id: string };
-            req.user = await User.findById(decoded.id).select('-password');
-
-            if (!req.user) {
-                return res.status(401).json({ message: 'Not authorized, user not found' });
-            }
-            next();
-        } catch (error) {
-            console.error(error);
-            res.status(401).json({ message: 'Not authorized, token failed' });
-        }
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Not authorized, no token provided' });
     }
-    if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token provided' });
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            throw new Error('JWT_SECRET is not defined in environment variables.');
+        }
+
+        const decoded = jwt.verify(token, secret) as { id: string };
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            return res.status(401).json({ message: 'Not authorized, user not found' });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error('Auth error:', error);
+        return res.status(401).json({ message: 'Not authorized, token invalid or expired' });
     }
 };
